@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  lang="$lang$"
+  xml:lang="$lang$"
+  $if(dir)$
+  dir="$dir$"
+  $endif$
+>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, user-scalable=yes"
+  />
+  $for(author-meta)$
+  <meta name="author" content="$author-meta$" />
+  $endfor$ $if(date-meta)$
+  <meta name="dcterms.date" content="$date-meta$" />
+  $endif$ $if(keywords)$
+  <meta name="keywords" content="$for(keywords)$$keywords$$sep$, $endfor$" />
+  $endif$
+  <title>$if(title-prefix)$$title-prefix$ – $endif$$pagetitle$</title>
+
+  $if(highlighting-css)$
+  <style>
+    $highlighting-css$
+  </style>
+  $endif$ $for(css)$
+  <link rel="stylesheet" href="$css$" />
+  $endfor$ $if(math)$ $math$ $endif$
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+  $for(header-includes)$ $header-includes$ $endfor$
+<style>
+:root {
+  --background-color: #fdfdfd;
+  --color: #111;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-color: #010101;
+    --color: #eee;
+  }
+}
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  background-color: var(--background-color);
+  color: var(--color);
+  -webkit-text-size-adjust: 100%;
+  font-feature-settings: "kern" 1;
+  font-kerning: normal;
+  margin: 0 auto;
+  max-width: 87.5%;
+  font-size: max(calc(14px + 0.2vw), calc(0.5vw));
+  padding: calc(5px + 0.2vw);
+}
+
+input {
+  font-size: 1rem; /* Increase font-size */
+  padding: 12px 20px; /* Add some padding */
+  border: 1px solid #ddd; /* Add a grey border */
+  margin-bottom: 1rem;
+}
+
+table {
+  border-collapse: collapse; /* Collapse borders */
+  width: 100%; /* Full-width */
+  border: 2px solid #ddd; /* Add a grey border */
+  font-size: 18px; /* Increase font-size */
+}
+
+th, td {
+  text-align: left; /* Left-align text */
+  padding: 12px; /* Add padding */
+}
+
+th {
+  cursor: pointer;
+}
+
+tr {
+  /* Add a bottom border to all table rows */
+  border-bottom: 1px solid #ddd;
+}
+
+tr.header, tr:hover {
+  /* Add a grey background color to the table header and on hover */
+  background-color: #9f9f9f;
+}
+</style>
+</head>
+<body>
+
+<h1>Restaurants in Boston</h1>
+<p>Sort by clicking a table header</p>
+<input type="text"  placeholder="Search...">
+
+$body$ $for(include-after)$ $include-after$ $endfor$
+
+<script>
+const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+
+const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
+    v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+    )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
+
+// do the work...
+document.querySelectorAll('th').forEach(th => th.addEventListener('click', () => {
+  const table = th.closest('table');
+  const tbody = table.querySelector('tbody');
+
+  document.querySelectorAll('th').forEach(th => {
+    if (th.textContent.slice(-1) == '▲' || th.textContent.slice(-1) == '▼') {
+      th.textContent = th.textContent.slice(0, -1);
+    }
+  });
+  if (this.asc) {
+    th.textContent += '▼';
+  } else {
+    th.textContent += '▲';
+  }
+
+  Array.from(tbody.querySelectorAll('tr'))
+    .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+    .forEach(tr => tbody.appendChild(tr))
+}));
+
+let params = new URLSearchParams(document.location.search);
+let query = params.get("q") || "";
+
+document.getElementsByTagName("input")[0].value = query;
+var input = document.getElementsByTagName("input")[0];
+
+function filterInput() {
+  var filter = input.value.toUpperCase();
+  var table = document.getElementsByTagName("table")[0];
+  var tr = table.getElementsByTagName("tr");
+
+  // Loop through all table rows, and hide those who don't match the search query
+  for (var i = 1; i < tr.length; i++) {
+    var td = tr[i].getElementsByTagName("td");
+    var hide = true;
+    for (var j = 0; j < td.length; j++) {
+      var txtValue = td[j].textContent || td[j].innerText;
+      if (txtValue && txtValue.toUpperCase().indexOf(filter) > -1) {
+        hide = false;
+      }
+    }
+    tr[i].style.display = hide ? "none" : "";
+  }
+}
+
+input.addEventListener("keyup", function(event) {
+    let searchParams = new URLSearchParams(window.location.search);
+
+    searchParams.set("q", event.target.value);
+
+    if (window.history.replaceState) {
+        const url = window.location.protocol
+                    + "//" + window.location.host
+                    + window.location.pathname
+                    + "?"
+                    + searchParams.toString();
+
+        window.history.replaceState({
+            path: url
+        }, "", url)
+    }
+    filterInput();
+});
+
+filterInput();
+</script>
+</body>
+</html>
