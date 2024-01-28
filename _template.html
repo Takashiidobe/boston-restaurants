@@ -130,28 +130,82 @@ document.querySelectorAll('th').forEach(th => th.addEventListener('click', () =>
     .forEach(tr => tbody.appendChild(tr))
 }));
 
+
 let params = new URLSearchParams(document.location.search);
 let query = params.get("q") || "";
 
 document.getElementsByTagName("input")[0].value = query;
 var input = document.getElementsByTagName("input")[0];
 
-function filterInput() {
-  var filter = input.value.toUpperCase();
-  var table = document.getElementsByTagName("table")[0];
-  var tr = table.getElementsByTagName("tr");
+function filterer(rowVal, op, value) {
+  if (op == ">") {
+    return rowVal > value;
+  } else if (op == "<") {
+    return rowVal < value;
+  } else if (op == "==" || op == '=') {
+    return rowVal == value;
+  } else if (op == "!=") {
+    return rowVal != value;
+  } else if (op == "<=") {
+    return rowVal <= value;
+  } else if (op == ">=") {
+    return rowVal >= value;
+  } else {
+    return true;
+  }
+}
 
+const table = document.querySelector('table');
+const tbody = document.querySelector('tbody');
+const trs = Array.from(tbody.querySelectorAll('tr'));
+
+const rows = [];
+
+for (const tr of trs) {
+  let children = Array.from(tr.children).map(col => col.textContent);
+  rows.push(children);
+}
+
+function filterInput() {
+  var filter = input.value.toLowerCase();
+  var splitFilter = filter.split(' ');
   // Loop through all table rows, and hide those who don't match the search query
-  for (var i = 1; i < tr.length; i++) {
-    var td = tr[i].getElementsByTagName("td");
-    var hide = true;
-    for (var j = 0; j < td.length; j++) {
-      var txtValue = td[j].textContent || td[j].innerText;
-      if (txtValue && txtValue.toUpperCase().indexOf(filter) > -1) {
-        hide = false;
+  if (splitFilter && splitFilter.length >= 3) {
+    document.querySelectorAll('th').forEach(th => {
+      if (th.textContent == splitFilter[0] || th.textContent.slice(0, -1) == splitFilter[0]) {
+        // we want to filter on matching the op.
+        let val = !isNaN(splitFilter[2]) ? Number(splitFilter[2]) : splitFilter[2];
+
+        let remaining = [];
+
+        for (const row of rows) {
+          let columnIndex = Array.from(th.parentNode.children).indexOf(th);
+          let rowVal = row[columnIndex];
+          rowVal = !isNaN(rowVal) ? Number(rowVal) : rowVal;
+
+          if (filterer(rowVal, splitFilter[1], val)) {
+            remaining.push(row);
+          }
+        }
+
+        tbody.innerHTML = '';
+        for (const tr of remaining) {
+          let newRow = document.createElement('tr');
+          for (const child of tr) {
+            let newCol = document.createElement('td');
+            newCol.textContent = child;
+            newRow.appendChild(newCol);
+          }
+          tbody.appendChild(newRow);
+        }
+
+        if (th.textContent.slice(-1) == '▲' || th.textContent.slice(-1) == '▼') {
+          Array.from(tbody.querySelectorAll('tr'))
+            .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+            .forEach(tr => tbody.appendChild(tr));
+        }
       }
-    }
-    tr[i].style.display = hide ? "none" : "";
+    });
   }
 }
 
